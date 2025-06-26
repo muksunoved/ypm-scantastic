@@ -7,53 +7,90 @@
 
 namespace stdx::details {
 
+using default_char = char;
+constexpr size_t kDfltFixedStringSize = 256;
+constexpr size_t kDfltErrorStrSize = 256;
+
 // Шаблонный класс, хранящий C-style строку фиксированной длины
 
 // ваш код здесь
-template <typename CharT = char, size_t Len = 0>
+template <typename CharT = default_char, size_t Len = kDfltFixedStringSize>
 requires  std::is_integral_v<CharT>
 struct fixed_string {
     // ваш код здесь
-    CharT f_string[Len] = {};
+    CharT data[Len+1] = {};
 
     constexpr fixed_string() = default;
 
     constexpr fixed_string(const CharT (&s)[Len]) noexcept {
-        std::copy_n(s,Len,f_string);
+        std::copy_n(s,Len,data);
     }
     template <size_t OtherLen>
     constexpr fixed_string(const CharT  (&s)[OtherLen]) noexcept requires 
     requires { 
         OtherLen <= Len; 
     }  {
-        std::copy_n(s,OtherLen,f_string);
+        std::copy_n(s,OtherLen,data);
     }
 
-    constexpr fixed_string(const CharT *begin, const CharT *end) noexcept {
+    constexpr fixed_string(const CharT * begin, const CharT * end) noexcept {
         const CharT *ptr = begin;
 
         if (begin) {
             for (size_t i = 0; i<Len-1 && ptr[i] != 0 && &ptr[i] != end; i++) {
-                f_string[i] = ptr[i];
+                data[i] = ptr[i];
             }
         }
     }
 
-    constexpr size_t get_strlen() {
+    consteval size_t size() const noexcept {
         size_t result = 0;
-        while(f_string[result]) {
+        while(data[result]) {
             ++result;
         }
-        return result;
+        return ++result;
     }
+
+    // constexpr bool operator==(const fixed_string& other) const {
+    //     constexpr size_t N = this->size();
+    //     if (N != other.size()) {
+    //         return false;
+    //     }
+    //     for (size_t i = 0; i<N; i++) {
+    //         if (this->data[i] != other.data[i]) {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
+    // constexpr bool operator==(const CharT* s) const {
+    //     const CharT *ptr = s;
+    //     constexpr size_t N = this->size();
+    //     size_t i = 0;
+
+    //     if (ptr) {
+    //         for (i = 0; i<N && ptr[i] != 0 ; i++) {
+    //             if (this->data[i] != ptr[i]) {
+    //                 return false;
+    //             }
+    //         }
+    //         if (i < N) {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
 };
 
 // Шаблонный класс, хранящий fixed_string достаточной длины для хранения ошибки парсинга
 
 // ваш код здесь
-template <typename CharT, size_t Len = 128>
-struct parse_error : public fixed_string<CharT, Len> {
+template <typename CharT = default_char, size_t Len = kDfltErrorStrSize>
+struct parse_error : public fixed_string<CharT,Len> {
     constexpr parse_error(const CharT* s) : fixed_string<CharT, Len>(s, nullptr) {} 
+    constexpr bool operator==(const parse_error& pe) const {
+        return *this == pe;
+    }
 };
 
 // Шаблонный класс для хранения результатов парсинга

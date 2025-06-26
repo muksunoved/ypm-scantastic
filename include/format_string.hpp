@@ -5,11 +5,17 @@
 #include "types.hpp"
 
 namespace stdx::details {
+    
+constexpr size_t kMaxFormatStrLen = 128;
 
 // Шаблонный класс для хранения форматирующей строчки и ее особенностей
 // ваш код здесь
+//template <typename CharT, size_t Len>
+template <fixed_string<default_char, kMaxFormatStrLen> str>
 class format_string {
     // ваш код здесь
+    public:
+    consteval std::expected<size_t, parse_error<>> get_number_placeholders();
 };
 
 // Пользовательский литерал
@@ -23,10 +29,9 @@ class format_string {
 
 // Функция для получения количества плейсхолдеров и проверки корректности формирующей строки
 // Функция закомментирована, так как еще не реализованы классы, которые она использует
-/*
 // Сделайте эту свободную функцию методом класса format_string
-template<fixed_string str>
-consteval std::expected<size_t, parse_error> get_number_placeholders() {
+template <fixed_string<default_char, kMaxFormatStrLen> str>
+consteval std::expected<size_t, parse_error<>>  format_string<str>::get_number_placeholders() {
     constexpr size_t N = str.size();
     if (!N)
         return 0;
@@ -84,7 +89,6 @@ consteval std::expected<size_t, parse_error> get_number_placeholders() {
 
     return placeholder_count;
 }
-*/
 
 // Функция для получения позиций плейсхолдеров
 
