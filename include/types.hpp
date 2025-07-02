@@ -11,11 +11,13 @@ using default_char = char;
 constexpr size_t kDfltFixedStringSize = 256;
 constexpr size_t kDfltErrorStrSize = 256;
 
+template <typename T>
+concept same_as_char_type = (std::same_as<T, char> || std::same_as<T, wchar_t>);
+
 // Шаблонный класс, хранящий C-style строку фиксированной длины
 
 // ваш код здесь
-template <typename CharT = default_char, size_t Len = kDfltFixedStringSize>
-requires  std::is_integral_v<CharT>
+template <same_as_char_type CharT = default_char, size_t Len = kDfltFixedStringSize>
 struct fixed_string {
     // ваш код здесь
     CharT data[Len+1] = {};
@@ -43,12 +45,16 @@ struct fixed_string {
         }
     }
 
-    consteval size_t size() const noexcept {
+    constexpr size_t size() const noexcept {
         size_t result = 0;
         while(data[result]) {
             ++result;
         }
         return ++result;
+    }
+
+    constexpr std::string_view get_data() const noexcept {
+        return std::string_view(data, size()-1);
     }
 
     // constexpr bool operator==(const fixed_string& other) const {
@@ -85,7 +91,7 @@ struct fixed_string {
 // Шаблонный класс, хранящий fixed_string достаточной длины для хранения ошибки парсинга
 
 // ваш код здесь
-template <typename CharT = default_char, size_t Len = kDfltErrorStrSize>
+template <same_as_char_type CharT = default_char, size_t Len = kDfltErrorStrSize>
 struct parse_error : public fixed_string<CharT,Len> {
     constexpr parse_error(const CharT* s) : fixed_string<CharT, Len>(s, nullptr) {} 
     constexpr bool operator==(const parse_error& pe) const {
