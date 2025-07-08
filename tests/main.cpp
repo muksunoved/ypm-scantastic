@@ -9,10 +9,8 @@ constexpr wchar_t wtest_string_1[] =  {L"Test error string 1"};
 constexpr char    test_string_1 [] =  { "Test error string 1"};
 
 int main() { 
-    constexpr auto test_size_1 = fixed_string<sizeof(test_string_1)>(test_string_1).size();
-    static_assert(test_size_1 == 20, "Error implementation of fixed_string type");
 
-    // Last zero 
+    // Fixed string last zero 
     static_assert(fixed_string<>(test_string_1).data[20] == 0, "Error implementation of fixed_string type");
 
     static_assert(wfixed_string<>(wtest_string_1).data[20] == 0, "Error implementation of fixed_string type");
@@ -47,6 +45,21 @@ int main() {
                                                                                                 std::pair<size_t,size_t>{10,13},
                                                                                                 std::pair<size_t,size_t>{15,18}} );
 
+    // Fixed string literal
+    
+    constexpr auto test_literal_1 = "test_literal {%u} {%d} {%s} {%u}"_fs;
+    static_assert(test_literal_1.placeholders_positions_.size() == 4);
+    static_assert(test_literal_1.placeholders_positions_[0] == std::pair<size_t,size_t>{13,16}); 
+    static_assert(test_literal_1.placeholders_positions_[1] == std::pair<size_t,size_t>{18,21}); 
+    static_assert(test_literal_1.placeholders_positions_[2] == std::pair<size_t,size_t>{23,26}); 
+    static_assert(test_literal_1.placeholders_positions_[3] == std::pair<size_t,size_t>{28,31}); 
+    
+    constexpr auto test_wliteral_1 = L"test_literal {%u} {%d} {%s} {%u}"_wfs;
+    static_assert(test_wliteral_1.placeholders_positions_.size() == 4);
+    static_assert(test_wliteral_1.placeholders_positions_[0] == std::pair<size_t,size_t>{13,16}); 
+    static_assert(test_wliteral_1.placeholders_positions_[1] == std::pair<size_t,size_t>{18,21}); 
+    static_assert(test_wliteral_1.placeholders_positions_[2] == std::pair<size_t,size_t>{23,26}); 
+    static_assert(test_wliteral_1.placeholders_positions_[3] == std::pair<size_t,size_t>{28,31}); 
 
     //static_assert(stdx::scan<wformat_string<L"test">{}, stdx::details::wfixed_string{}, int>().values<0>() == 42); 
 

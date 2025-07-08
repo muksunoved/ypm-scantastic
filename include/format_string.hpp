@@ -132,10 +132,14 @@ using wformat_string  = basic_format_string<wchar_t, str>;
 }
 */
 
-// Функция для получения количества плейсхолдеров и проверки корректности формирующей строки
-// Функция закомментирована, так как еще не реализованы классы, которые она использует
-// Сделайте эту свободную функцию методом класса format_string
+template <fixed_string<kMaxFormatStrSize> str>
+constexpr auto operator"" _fs() {
+    return format_string<str>();
+}
 
-// Функция для получения позиций плейсхолдеров
+template <wfixed_string<kMaxFormatStrSize> str>
+constexpr auto operator"" _wfs() {
+    return wformat_string<str>();
+}
 
 } // namespace stdx::details
