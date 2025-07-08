@@ -20,9 +20,6 @@ class basic_format_string {
     // ваш код здесь
 public:
 
-private:
-
-
     static consteval std::expected<size_t, parse_error<>> get_number_placeholders() {
         constexpr size_t N = str_.size();
         if (!N)
@@ -91,8 +88,10 @@ public:
     
     using placeholders_pair_t = std::pair<size_t, size_t>;
     using placeholders_positions_t = std::array<placeholders_pair_t, number_placeholders_.value()>;
+
+private:
     
-    static consteval placeholders_positions_t get_placeholders_positions() {
+    static constexpr placeholders_positions_t get_placeholders_positions() {
         size_t pos = 0;
         placeholders_positions_t result;
         for (size_t i = 0; i < number_placeholders_.value(); i++) {
@@ -111,8 +110,9 @@ public:
         }
         return result;
     } 
+public:
 
-    static constexpr placeholders_positions_t placeholders_positions_ = get_placeholder_positions();
+    static constexpr placeholders_positions_t placeholders_positions_ = get_placeholders_positions();
 
 };
 
@@ -137,10 +137,5 @@ using wformat_string  = basic_format_string<wchar_t, str>;
 // Сделайте эту свободную функцию методом класса format_string
 
 // Функция для получения позиций плейсхолдеров
-
-// ваш код здесь
-void get_placeholder_positions() {  // сигнатуру тоже нужно изменить
-    // ваш код здесь
-}
 
 } // namespace stdx::details
