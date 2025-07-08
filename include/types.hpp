@@ -15,6 +15,19 @@ constexpr size_t kDfltErrorStrSize = 256;
 template <typename T>
 concept same_as_char_type = (std::same_as<T, char> || std::same_as<T, wchar_t>);
 
+template <typename T>
+concept supported_value_type = (
+                                    std::same_as<T, int8_t> 
+                                    || std::same_as<T, int16_t>
+                                    || std::same_as<T, int32_t>
+                                    || std::same_as<T, int64_t>
+                                    || std::same_as<T, uint8_t>
+                                    || std::same_as<T, uint16_t>
+                                    || std::same_as<T, uint32_t>
+                                    || std::same_as<T, uint32_t>
+                                    || std::same_as<T, std::string>
+                                    || std::same_as<T, std::string_view>
+                                );
 // Шаблонный класс, хранящий C-style строку фиксированной длины
 
 // ваш код здесь

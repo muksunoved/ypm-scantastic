@@ -8,6 +8,11 @@ using namespace stdx::details;
 constexpr wchar_t wtest_string_1[] =  {L"Test error string 1"};
 constexpr char    test_string_1 [] =  { "Test error string 1"};
 
+template <typename T>
+concept same_as_support_type = (std::same_as<T, int8_t> 
+                                || std::same_as<T, int16_t>
+                                || std::same_as<T, int32_t>
+                            );
 int main() { 
 
     // Fixed string last zero 
@@ -60,6 +65,20 @@ int main() {
     static_assert(test_wliteral_1.placeholders_positions_[1] == std::pair<size_t,size_t>{18,21}); 
     static_assert(test_wliteral_1.placeholders_positions_[2] == std::pair<size_t,size_t>{23,26}); 
     static_assert(test_wliteral_1.placeholders_positions_[3] == std::pair<size_t,size_t>{28,31}); 
+
+    static_assert(std::integral<int32_t> == true);
+    static_assert(stdx::details::supported_value_type<uint8_t> == true);
+    static_assert(stdx::details::supported_value_type<uint16_t> == true);
+    static_assert(stdx::details::supported_value_type<uint32_t> == true);
+    static_assert(stdx::details::supported_value_type<uint8_t*> == false);
+    static_assert(stdx::details::supported_value_type<uint8_t&> == false);
+    static_assert(stdx::details::supported_value_type<std::string> == true);
+    static_assert(stdx::details::supported_value_type<std::string_view> == true);
+    static_assert(stdx::details::supported_value_type<std::string&> == false);
+    static_assert(stdx::details::supported_value_type<std::string_view&> == false);
+    static_assert(stdx::details::supported_value_type<float> == false);
+    static_assert(stdx::details::supported_value_type<double> == false);
+
 
     //static_assert(stdx::scan<wformat_string<L"test">{}, stdx::details::wfixed_string{}, int>().values<0>() == 42); 
 

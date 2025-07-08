@@ -13,7 +13,7 @@ namespace stdx::details {
 // Шаблонная функция, возвращающая пару позиций в строке с исходными данными, соотвествующих I-ому плейсхолдеру
 // Функция закомментирована, так как еще не реализованы классы, которые она использует
 
-template<int I, format_string fmt, fixed_string source>
+template<size_t I, format_string fmt, fixed_string source>
 consteval auto get_current_source_for_parsing() {
     static_assert(I >= 0 && I < fmt.number_placeholders, "Invalid placeholder index");
 
@@ -70,7 +70,8 @@ consteval auto get_current_source_for_parsing() {
 // Шаблонная функция, выполняющая преобразования исходных данных в конкретный тип на основе I-го плейсхолдера
 
 // здесь ваш код
-void parse_input() {  // поменяйте сигнатуру
+template<size_t I, format_string fmt, fixed_string source, supported_value_type ValueT>
+ValueT parse_input() {  // поменяйте сигнатуру
     // здесь ваш код
 }
 
