@@ -24,10 +24,28 @@ concept supported_value_type = (
                                     || std::same_as<T, uint8_t>
                                     || std::same_as<T, uint16_t>
                                     || std::same_as<T, uint32_t>
-                                    || std::same_as<T, uint32_t>
-                                    || std::same_as<T, std::string>
+                                    || std::same_as<T, uint64_t>
                                     || std::same_as<T, std::string_view>
                                 );
+template <typename T>
+concept signed_digital_value_type = (
+                                    std::same_as<T, int8_t> 
+                                    || std::same_as<T, int16_t>
+                                    || std::same_as<T, int32_t>
+                                    || std::same_as<T, int64_t>
+                                );
+template <typename T>
+concept unsigned_digital_value_type = (
+                                     std::same_as<T, uint8_t>
+                                    || std::same_as<T, uint16_t>
+                                    || std::same_as<T, uint32_t>
+                                    || std::same_as<T, uint64_t>
+                                );
+template <typename T>
+concept string_value_type = (
+                                     std::same_as<T, std::string_view>
+                                );
+
 // Шаблонный класс, хранящий C-style строку фиксированной длины
 
 // ваш код здесь

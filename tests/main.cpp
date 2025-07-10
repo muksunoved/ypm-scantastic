@@ -66,19 +66,26 @@ int main() {
     static_assert(test_wliteral_1.placeholders_positions_[2] == std::pair<size_t,size_t>{23,26}); 
     static_assert(test_wliteral_1.placeholders_positions_[3] == std::pair<size_t,size_t>{28,31}); 
 
-    static_assert(std::integral<int32_t> == true);
     static_assert(stdx::details::supported_value_type<uint8_t> == true);
     static_assert(stdx::details::supported_value_type<uint16_t> == true);
     static_assert(stdx::details::supported_value_type<uint32_t> == true);
     static_assert(stdx::details::supported_value_type<uint8_t*> == false);
     static_assert(stdx::details::supported_value_type<uint8_t&> == false);
-    static_assert(stdx::details::supported_value_type<std::string> == true);
     static_assert(stdx::details::supported_value_type<std::string_view> == true);
     static_assert(stdx::details::supported_value_type<std::string&> == false);
     static_assert(stdx::details::supported_value_type<std::string_view&> == false);
     static_assert(stdx::details::supported_value_type<float> == false);
     static_assert(stdx::details::supported_value_type<double> == false);
 
+
+    constexpr auto test_parse_sv = parse_input<0, "test {%s} test"_fs, fixed_string<>("test test_string test"), std::string_view>();
+    static_assert( test_parse_sv == std::string_view("test_string"));
+
+    constexpr auto test_parse_d_1 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test 500 test"), int16_t>();
+    static_assert( test_parse_d_1 == 500);
+
+    constexpr auto test_parse_d_2 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test -500 test"), int16_t>();
+    static_assert( test_parse_d_2 == -500);
 
     //static_assert(stdx::scan<wformat_string<L"test">{}, stdx::details::wfixed_string{}, int>().values<0>() == 42); 
 

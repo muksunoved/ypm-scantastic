@@ -9,6 +9,34 @@
 namespace stdx::details {
 
 constexpr size_t kMaxFormatStrSize = 256;
+    
+enum class spec_type {
+    kSignedDigital,
+    kUnsignedDigital,
+    kString
+};
+
+template <same_as_char_type CharT>
+struct valid_specs {
+    static constexpr CharT data[] = {   static_cast<CharT>('d'), 
+                                                    static_cast<CharT>('u'), 
+                                                /*  static_cast<CharT>('f'),  */
+                                                    static_cast<CharT>('s')};
+
+    static consteval std::expected<spec_type, parse_error<>> get_spec_type(CharT symbol) {
+        switch (symbol) {
+            case static_cast<CharT>('d'):
+            return spec_type::kSignedDigital;
+            case static_cast<CharT>('u'):
+            return spec_type::kUnsignedDigital;
+            case static_cast<CharT>('s'):
+            return spec_type::kString;
+
+            default:
+            return std::unexpected("Unknown specifier");
+        }
+    }
+};
 
 
 // Шаблонный класс для хранения форматирующей строчки и ее особенностей
@@ -53,13 +81,9 @@ public:
 
                 // Проверяем допустимые спецификаторы
                 const CharT spec = str_.data[pos];
-                constexpr CharT valid_specs[] = {   static_cast<CharT>('d'), 
-                                                    static_cast<CharT>('u'), 
-                                                    static_cast<CharT>('f'), 
-                                                    static_cast<CharT>('s')};
                 bool valid = false;
 
-                for (const CharT s : valid_specs) {
+                for (const CharT s : valid_specs<CharT>::data) {
                     if (spec == s) {
                         valid = true;
                         break;
