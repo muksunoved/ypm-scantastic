@@ -12,6 +12,9 @@ namespace stdx::details {
 constexpr size_t kDfltFixedStringSize = 256;
 constexpr size_t kDfltErrorStrSize = 256;
 
+
+using max_value_type_t = uint64_t;
+
 template <typename T>
 concept same_as_char_type = (std::same_as<T, char> || std::same_as<T, wchar_t>);
 
@@ -26,6 +29,15 @@ concept supported_value_type = (
                                     || std::same_as<T, uint32_t>
                                     || std::same_as<T, uint64_t>
                                     || std::same_as<T, std::string_view>
+                                    || std::same_as<T, const int8_t> 
+                                    || std::same_as<T, const int16_t>
+                                    || std::same_as<T, const int32_t>
+                                    || std::same_as<T, const int64_t>
+                                    || std::same_as<T, const uint8_t>
+                                    || std::same_as<T, const uint16_t>
+                                    || std::same_as<T, const uint32_t>
+                                    || std::same_as<T, const uint64_t>
+                                    || std::same_as<T, const std::string_view>
                                 );
 template <typename T>
 concept signed_digital_value_type = (
@@ -33,6 +45,10 @@ concept signed_digital_value_type = (
                                     || std::same_as<T, int16_t>
                                     || std::same_as<T, int32_t>
                                     || std::same_as<T, int64_t>
+                                    || std::same_as<T, const int8_t> 
+                                    || std::same_as<T, const int16_t>
+                                    || std::same_as<T, const int32_t>
+                                    || std::same_as<T, const int64_t>
                                 );
 template <typename T>
 concept unsigned_digital_value_type = (
@@ -40,10 +56,15 @@ concept unsigned_digital_value_type = (
                                     || std::same_as<T, uint16_t>
                                     || std::same_as<T, uint32_t>
                                     || std::same_as<T, uint64_t>
+                                    || std::same_as<T, const uint8_t>
+                                    || std::same_as<T, const uint16_t>
+                                    || std::same_as<T, const uint32_t>
+                                    || std::same_as<T, const uint64_t>
                                 );
 template <typename T>
 concept string_value_type = (
                                      std::same_as<T, std::string_view>
+                                     || std::same_as<T, const std::string_view>
                                 );
 
 // Шаблонный класс, хранящий C-style строку фиксированной длины
@@ -115,13 +136,20 @@ template <typename... Ts>
 struct scan_result {
 // ваш код здесь
 // измените реализацию
+    constexpr scan_result() = default ;
+
     constexpr scan_result(Ts &&...args) {
-        values_ = std::make_tuple(args...);
+        values_ = std::tuple<Ts...>(args...);
     }
-    std::tuple<Ts ... > values_{};
+    std::tuple<std::decay_t<Ts>... > values_;
 
     template <size_t index>
-    constexpr auto values() {
+    constexpr auto& values() {
+        return std::get<index>(values_);
+    }
+    
+    template <size_t index>
+    constexpr auto values() const {
         return std::get<index>(values_);
     }
 };

@@ -12,7 +12,8 @@ namespace stdx::details {
 
 template <same_as_char_type CharT>
 struct valid_digit_symbols {
-    static constexpr std::array<std::pair<CharT, int>, 11> data  = {{   
+    static constexpr std::array<std::pair<CharT, int>, 12> data  = {{   
+                            { static_cast<CharT>(' '), -1 }, 
                             { static_cast<CharT>('-'), -1 }, 
                             { static_cast<CharT>('0'),  0}, 
                             { static_cast<CharT>('1'),  1}, 
@@ -26,8 +27,9 @@ struct valid_digit_symbols {
                             { static_cast<CharT>('9'),  9}, 
     }};
     
-    static constexpr size_t first_of_digitals = 1;
-    static constexpr size_t minus_position = 0;
+    static constexpr size_t first_of_digitals = 2;
+    static constexpr size_t minus_position = 1;
+    static constexpr size_t space_position = 0;
 
     static constexpr bool is_digital(CharT c) {
         for (auto d : data) {
@@ -38,6 +40,9 @@ struct valid_digit_symbols {
     }
     static constexpr bool is_minus(CharT c) {
         return (c == data[minus_position].first);
+    }
+    static constexpr bool is_space(CharT c) {
+        return (c == data[space_position].first);
     }
     static constexpr std::expected<int, parse_error<>> to_number(CharT c) {
         for (auto d : data) {
@@ -51,7 +56,6 @@ struct valid_digit_symbols {
 };
 
 // Шаблонная функция, возвращающая пару позиций в строке с исходными данными, соотвествующих I-ому плейсхолдеру
-// Функция закомментирована, так как еще не реализованы классы, которые она использует
 
 template<size_t I, format_string fmt, fixed_string source>
 consteval auto get_current_source_for_parsing() {
@@ -109,12 +113,32 @@ consteval auto get_current_source_for_parsing() {
 // Реализуйте семейство функция parse_value
 
 template<supported_value_type ValueT>
-consteval std::expected<ValueT, parse_error<>> parse_unsigned_value(const fixed_string<>& source, const size_t first, const size_t last) {
+consteval std::expected<ValueT, parse_error<>> parse_unsigned_value(const fixed_string<>& source, const size_t first, const size_t last, bool block_spaces = false) {
     if (!source.size()) {
         return std::unexpected("Invalid digital string size");
     }
 
-    for (size_t pos = first; pos < last; pos++) {
+    size_t local_first = first;
+    size_t local_last = last;
+
+    if (!block_spaces) {
+        for (size_t pos = first; pos < last; pos++) {
+            if (valid_digit_symbols<char>::is_space(source.data[pos])) {
+                local_first++;
+            } else {
+                break;
+            }
+        }
+    }
+    for (size_t pos = last-1; pos > local_first; pos--) {
+        if (valid_digit_symbols<char>::is_space(source.data[pos])) {
+            local_last--;
+        } else {
+            break;
+        }
+    }
+
+    for (size_t pos = local_first; pos < local_last; pos++) {
         if (!valid_digit_symbols<char>::is_digital(source.data[pos]))
             return std::unexpected("Invalid digital symbol");
 
@@ -122,16 +146,16 @@ consteval std::expected<ValueT, parse_error<>> parse_unsigned_value(const fixed_
 
     ValueT value = 0;
 
-    for (size_t pos = first; pos < last; pos++) {
+    for (size_t pos = local_first; pos < local_last; pos++) {
         auto res = valid_digit_symbols<char>::to_number(source.data[pos]);
         
         if (!res) {
             return std::unexpected("Invalid digit symbol");
         };
 
-        auto digit = res.value();
-        auto limit  = std::numeric_limits<ValueT>::max();
-        if ((limit) / 10  < value) {
+        max_value_type_t digit = res.value();
+        max_value_type_t limit  = std::numeric_limits<ValueT>::max();
+        if (limit / 10  < value) {
             return std::unexpected("Value numeric limit overflow");
         } 
         value *= 10;
@@ -154,25 +178,32 @@ consteval std::expected<ValueT, parse_error<>> parse_signed_value(const fixed_st
         minus = -1;
         shift = 1;
     }
-    // Max of type limits
-    auto res = parse_unsigned_value<uint64_t>(source, first+shift, last);
+    auto is_minus = minus < 0;
+    
+    auto res = parse_unsigned_value<max_value_type_t>(source, first+shift, last, (is_minus ? true : false) );
+
     if (!res) {
         return std::unexpected("Parse base unsigned value error");
     }
-    auto value = res.value();
-    auto limit_max  = uint64_t(std::numeric_limits<ValueT>::max());
-    auto limit_min  = uint64_t(std::numeric_limits<ValueT>::min());
 
-    if (limit_max < value || (minus < 0 && limit_min < value)) {
-        return std::unexpected("Value numeric limit overflow");
+    auto value = res.value();
+    max_value_type_t limit_max  = std::numeric_limits<ValueT>::max();
+
+    if (!is_minus) {
+        if (limit_max < value) { 
+            return std::unexpected("Value numeric limit overflow");
+        }
+    } else {
+        max_value_type_t limit_min  = std::make_unsigned_t<ValueT>(std::numeric_limits<ValueT>::min()  ) ;
+        if (limit_min < value) { 
+            return std::unexpected("Value numeric limit overflow");
+        }
     }
     return minus * value;
 }
 
 template<supported_value_type ValueT>
 consteval std::expected<std::string_view, parse_error<>> parse_string_value(const fixed_string<>& source, const size_t first, const size_t last) {
-    static_assert(std::is_same_v<std::string_view, ValueT>, "Specifier is \%s but argument is another type." 
-                                                                "Check format string or argument list of types");
     if (!source.size()) {
         return std::unexpected("Invalid digital string size");
     }
@@ -212,7 +243,6 @@ consteval std::expected<ValueT, parse_error<>> parse_input() {  // поменя�
             } else {
                 return std::unexpected("Unsupported value type");
             }
-
         }
     }
     // update empty placeholder

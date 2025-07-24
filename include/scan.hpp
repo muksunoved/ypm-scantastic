@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tuple>
+#include <utility>
 
 #include "parse.hpp"
 #include "format_string.hpp"
@@ -8,24 +9,31 @@
 
 namespace stdx {
 
-// // Главная функция
-// template <  details::same_as_char_type CharT,
-//             details::basic_format_string<   CharT,  
-//                                             details::basic_fixed_string<CharT, 
-//                                             details::kMaxFormatStrSize> str > fmt, 
-//             details::basic_fixed_string<CharT, details::kDfltFixedStringSize> source, 
-//             typename... Ts>
-// struct basic_scan {
-//     consteval details::scan_result<Ts...> operator()() { // передайте пакет параметров в scan_result
-// // измените реализацию
-//     return details::scan_result<Ts...>{42};
-// }
+template < details::format_string fmt, details::fixed_string source, typename... Ts, size_t I>
+constexpr void scan_w_index(details::scan_result<Ts...>* res) {
 
-// }
+        using selected_t = std::tuple_element_t<I, std::tuple<Ts...>>;
+        res-> template values<I>() = details::parse_input<I, fmt, source, selected_t>();
+}
 
-// template <  details::format_string str > fmt, 
-//             details::fixed_string source, 
-//             typename... Ts>
-// using scan = basic_scan<wcahr_, fmt, source, Ts... > ;
+template < details::format_string fmt, details::fixed_string source, typename... Ts, size_t... Is>
+constexpr details::scan_result<Ts...> scan_w_indexes(std::index_sequence<Is...> ) {
+        
+    details::scan_result<Ts...> res{};
+
+    ((res. template values<Is>() = details::parse_input<Is, fmt, source, std::tuple_element_t<Is, std::tuple<Ts...>>>().value()), ...);
+
+    return res;
+}
+
+template < details::format_string fmt, details::fixed_string source, typename... Ts>
+constexpr std::expected<details::scan_result<Ts...>, details::parse_error<>> scan() {
+    if constexpr (sizeof... (Ts) == fmt.number_placeholders_) {
+
+        return scan_w_indexes<fmt,source,Ts...>(std::make_index_sequence<sizeof... (Ts)>{});
+    } 
+    
+    return std::unexpected("Mismatch plaseholders number and count of parameters list");
+}
 
 } // namespace stdx

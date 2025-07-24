@@ -5,8 +5,6 @@
 using namespace stdx::details;
 
     
-constexpr wchar_t wtest_string_1[] =  {L"Test error string 1"};
-constexpr char    test_string_1 [] =  { "Test error string 1"};
 
 template <typename T>
 concept same_as_support_type = (std::same_as<T, int8_t> 
@@ -14,6 +12,9 @@ concept same_as_support_type = (std::same_as<T, int8_t>
                                 || std::same_as<T, int32_t>
                             );
 int main() { 
+
+    constexpr wchar_t wtest_string_1[] =  {L"Test error string 1"};
+    constexpr char    test_string_1 [] =  { "Test error string 1"};
 
     // Fixed string last zero 
     static_assert(fixed_string<>(test_string_1).data[20] == 0, "Error implementation of fixed_string type");
@@ -86,8 +87,39 @@ int main() {
 
     constexpr auto test_parse_d_2 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test -500 test"), int16_t>();
     static_assert( test_parse_d_2 == -500);
+    
+    constexpr auto test_parse_d_3 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test 32767 test"), int16_t>();
+    static_assert( test_parse_d_3 == 32767);
+    
+    constexpr auto test_parse_d_4 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test -32768 test"), int16_t>();
+    static_assert( test_parse_d_4 == -32768);
+    
+    constexpr auto test_parse_d_5 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test 32768 test"), int16_t>();
+    static_assert( !test_parse_d_5.has_value());
+    
+    constexpr auto test_parse_d_6 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test -32769 test"), int16_t>();
+    static_assert( !test_parse_d_6.has_value());
+    
+    constexpr auto test_parse_d_7 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test 9223372036854775807 test"), int64_t>();
+    static_assert( test_parse_d_7 == 9223372036854775807);
+    
+    constexpr auto test_parse_d_8 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test -9223372036854775808 test"), int64_t>();
+    static_assert( test_parse_d_8 == -9223372036854775808);
 
-    //static_assert(stdx::scan<wformat_string<L"test">{}, stdx::details::wfixed_string{}, int>().values<0>() == 42); 
+    constexpr auto test_parse_d_9 = parse_input<0, "test {%u} test"_fs, fixed_string<>("test  18446744073709551615  test"), uint64_t>();
+    static_assert( test_parse_d_9 == 18446744073709551615);
+    
+    constexpr auto test_parse_d_10 = parse_input<0, "test {%u} test"_fs, fixed_string<>("test 18446744073709551616 test"), uint64_t>();
+    static_assert( !test_parse_d_10.has_value());
+    
+    constexpr auto scan_res_1 = stdx::scan<"test {%d} test"_fs, fixed_string<>("test 32767 test"), int16_t>();
+    static_assert( scan_res_1.value().values<0>() == 32767);
 
+    constexpr auto scan_res_2 = stdx::scan<"test {%d} {%u} test"_fs, fixed_string<>("test 32767 100000 test"), int16_t, uint32_t>();
+    static_assert( scan_res_2.value().values<0>() == 32767);
+    static_assert( scan_res_2.value().values<1>() == 100000);
 
+    constexpr auto scan_res_3 = stdx::scan<"test {%d} {%s} test"_fs, fixed_string<>("test 32767 test_string test"), const int16_t, const std::string_view>();
+    static_assert( scan_res_3.value().values<0>() == 32767);
+    static_assert( scan_res_3.value().values<1>() == std::string_view("test_string"));
 }

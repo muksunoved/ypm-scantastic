@@ -20,15 +20,16 @@ template <same_as_char_type CharT>
 struct valid_specs {
     static constexpr CharT data[] = {   static_cast<CharT>('d'), 
                                                     static_cast<CharT>('u'), 
-                                                /*  static_cast<CharT>('f'),  */
                                                     static_cast<CharT>('s')};
 
     static consteval std::expected<spec_type, parse_error<>> get_spec_type(CharT symbol) {
         switch (symbol) {
             case static_cast<CharT>('d'):
             return spec_type::kSignedDigital;
+
             case static_cast<CharT>('u'):
             return spec_type::kUnsignedDigital;
+
             case static_cast<CharT>('s'):
             return spec_type::kString;
 
