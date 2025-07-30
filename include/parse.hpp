@@ -186,7 +186,7 @@ consteval std::expected<ValueT, parse_error<>> parse_signed_value(const fixed_st
         return std::unexpected("Parse base unsigned value error");
     }
 
-    auto value = res.value();
+    max_value_type_t value = res.value();
     max_value_type_t limit_max  = std::numeric_limits<ValueT>::max();
 
     if (!is_minus) {

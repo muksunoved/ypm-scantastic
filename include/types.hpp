@@ -137,11 +137,19 @@ struct scan_result {
 // ваш код здесь
 // измените реализацию
     constexpr scan_result() = default ;
-
+    
     constexpr scan_result(Ts &&...args) {
         values_ = std::tuple<Ts...>(args...);
     }
-    std::tuple<std::decay_t<Ts>... > values_;
+
+    // constexpr scan_result(const std::tuple<std::decay_t<Ts>...>& tp) :
+    // values_(tp) {
+    // }
+    constexpr scan_result(const std::tuple<Ts...>& tp) :
+    values_(tp) {
+    }
+    
+    std::tuple<Ts... > values_;
 
     template <size_t index>
     constexpr auto& values() {
@@ -152,6 +160,13 @@ struct scan_result {
     constexpr auto values() const {
         return std::get<index>(values_);
     }
+    
+    template <size_t index>
+    constexpr std::tuple_element_t<index, std::tuple<Ts...>> values_for_t() const {
+        return std::get<index>(values_);
+    }
+
+
 };
 
 } // namespace stdx::details

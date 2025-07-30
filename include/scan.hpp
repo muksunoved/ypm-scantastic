@@ -9,19 +9,19 @@
 
 namespace stdx {
 
-template < details::format_string fmt, details::fixed_string source, typename... Ts, size_t I>
-constexpr void scan_w_index(details::scan_result<Ts...>* res) {
-
-        using selected_t = std::tuple_element_t<I, std::tuple<Ts...>>;
-        res-> template values<I>() = details::parse_input<I, fmt, source, selected_t>();
-}
+template<std::size_t N, typename... Ts>
+using elem_type = typename std::tuple_element<N, std::tuple<Ts...>>::type;
 
 template < details::format_string fmt, details::fixed_string source, typename... Ts, size_t... Is>
 constexpr details::scan_result<Ts...> scan_w_indexes(std::index_sequence<Is...> ) {
-        
-    details::scan_result<Ts...> res{};
 
-    ((res. template values<Is>() = details::parse_input<Is, fmt, source, std::tuple_element_t<Is, std::tuple<Ts...>>>().value()), ...);
+    using Tuple = typename std::tuple<std::decay_t<Ts>...>;
+
+    Tuple tp;        
+
+    ((std::get<Is>(tp) = details::parse_input<Is, fmt, source, elem_type<Is,Ts...>>().value()), ...);
+
+    details::scan_result<Ts...>res{{tp}};
 
     return res;
 }
