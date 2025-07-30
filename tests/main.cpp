@@ -4,13 +4,6 @@
 
 using namespace stdx::details;
 
-    
-
-template <typename T>
-concept same_as_support_type = (std::same_as<T, int8_t> 
-                                || std::same_as<T, int16_t>
-                                || std::same_as<T, int32_t>
-                            );
 int main() { 
 
     constexpr wchar_t wtest_string_1[] =  {L"Test error string 1"};
@@ -124,6 +117,6 @@ int main() {
     static_assert( scan_res_3.value().values<0>() == 32767);
     static_assert( scan_res_3.value().values<1>() == std::string_view("test_string"));
 
-    static_assert( std::is_same_v<decltype(scan_res_3.value().values_for_t<0>()), const int16_t>);
-    std::get<0>(scan_res_3.value().values_) = 5;
+    static_assert( std::is_same_v<decltype ((scan_res_3.value().values_for_t<0>())), const int16_t&&>);
+    
 }

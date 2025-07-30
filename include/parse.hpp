@@ -31,20 +31,20 @@ struct valid_digit_symbols {
     static constexpr size_t minus_position = 1;
     static constexpr size_t space_position = 0;
 
-    static constexpr bool is_digital(CharT c) {
+    static consteval bool is_digital(CharT c) {
         for (auto d : data) {
             if (d.first == c)
                 return true;
         }
         return false;
     }
-    static constexpr bool is_minus(CharT c) {
+    static consteval bool is_minus(CharT c) {
         return (c == data[minus_position].first);
     }
-    static constexpr bool is_space(CharT c) {
+    static consteval bool is_space(CharT c) {
         return (c == data[space_position].first);
     }
-    static constexpr std::expected<int, parse_error<>> to_number(CharT c) {
+    static consteval std::expected<int, parse_error<>> to_number(CharT c) {
         for (auto d : data) {
             if (d.first == c)
                 return d.second;
@@ -56,7 +56,6 @@ struct valid_digit_symbols {
 };
 
 // Шаблонная функция, возвращающая пару позиций в строке с исходными данными, соотвествующих I-ому плейсхолдеру
-
 template<size_t I, format_string fmt, fixed_string source>
 consteval auto get_current_source_for_parsing() {
     constexpr auto number_placeholders = fmt.number_placeholders_.value();
@@ -110,8 +109,7 @@ consteval auto get_current_source_for_parsing() {
     return std::pair{src_start, src_end};
 }
 
-// Реализуйте семейство функция parse_value
-
+// Семейство функция parse_value
 template<supported_value_type ValueT>
 consteval std::expected<ValueT, parse_error<>> parse_unsigned_value(const fixed_string<>& source, const size_t first, const size_t last, bool block_spaces = false) {
     if (!source.size()) {
@@ -211,12 +209,8 @@ consteval std::expected<std::string_view, parse_error<>> parse_string_value(cons
 }
 
 // Шаблонная функция, выполняющая преобразования исходных данных в конкретный тип на основе I-го плейсхолдера
-
-// здесь ваш код
 template<size_t I, format_string fmt, fixed_string source, supported_value_type ValueT>
 consteval std::expected<ValueT, parse_error<>> parse_input() {  // поменяйте сигнатуру
-    // здесь ваш код
-
     auto [src_first, src_last] = get_current_source_for_parsing<I,fmt,source>();
     auto [f_p, s_p] = fmt.placeholders_positions_[I];
 

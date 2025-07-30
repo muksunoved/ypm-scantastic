@@ -9,8 +9,9 @@ namespace stdx::details {
 
 #define CharPrefix L
 
-constexpr size_t kDfltFixedStringSize = 256;
-constexpr size_t kDfltErrorStrSize = 256;
+constexpr size_t kDfltFixedStringSize   = 256;
+constexpr size_t kDfltErrorStrSize      = 256;
+constexpr size_t kMaxFormatStrSize      = 256;
 
 
 using max_value_type_t = uint64_t;
@@ -20,75 +21,54 @@ concept same_as_char_type = (std::same_as<T, char> || std::same_as<T, wchar_t>);
 
 template <typename T>
 concept supported_value_type = (
-                                    std::same_as<T, int8_t> 
-                                    || std::same_as<T, int16_t>
-                                    || std::same_as<T, int32_t>
-                                    || std::same_as<T, int64_t>
-                                    || std::same_as<T, uint8_t>
-                                    || std::same_as<T, uint16_t>
-                                    || std::same_as<T, uint32_t>
-                                    || std::same_as<T, uint64_t>
-                                    || std::same_as<T, std::string_view>
-                                    || std::same_as<T, const int8_t> 
-                                    || std::same_as<T, const int16_t>
-                                    || std::same_as<T, const int32_t>
-                                    || std::same_as<T, const int64_t>
-                                    || std::same_as<T, const uint8_t>
-                                    || std::same_as<T, const uint16_t>
-                                    || std::same_as<T, const uint32_t>
-                                    || std::same_as<T, const uint64_t>
-                                    || std::same_as<T, const std::string_view>
+                                       std::same_as<std::remove_cv_t<T>, int8_t> 
+                                    || std::same_as<std::remove_cv_t<T>, int16_t>
+                                    || std::same_as<std::remove_cv_t<T>, int32_t>
+                                    || std::same_as<std::remove_cv_t<T>, int64_t>
+                                    || std::same_as<std::remove_cv_t<T>, uint8_t>
+                                    || std::same_as<std::remove_cv_t<T>, uint16_t>
+                                    || std::same_as<std::remove_cv_t<T>, uint32_t>
+                                    || std::same_as<std::remove_cv_t<T>, uint64_t>
+                                    || std::same_as<std::remove_cv_t<T>, std::string_view>
                                 );
 template <typename T>
 concept signed_digital_value_type = (
-                                    std::same_as<T, int8_t> 
-                                    || std::same_as<T, int16_t>
-                                    || std::same_as<T, int32_t>
-                                    || std::same_as<T, int64_t>
-                                    || std::same_as<T, const int8_t> 
-                                    || std::same_as<T, const int16_t>
-                                    || std::same_as<T, const int32_t>
-                                    || std::same_as<T, const int64_t>
+                                       std::same_as<std::remove_cv_t<T>, int8_t> 
+                                    || std::same_as<std::remove_cv_t<T>, int16_t>
+                                    || std::same_as<std::remove_cv_t<T>, int32_t>
+                                    || std::same_as<std::remove_cv_t<T>, int64_t>
                                 );
 template <typename T>
 concept unsigned_digital_value_type = (
-                                     std::same_as<T, uint8_t>
-                                    || std::same_as<T, uint16_t>
-                                    || std::same_as<T, uint32_t>
-                                    || std::same_as<T, uint64_t>
-                                    || std::same_as<T, const uint8_t>
-                                    || std::same_as<T, const uint16_t>
-                                    || std::same_as<T, const uint32_t>
-                                    || std::same_as<T, const uint64_t>
+                                       std::same_as<std::remove_cv_t<T>, uint8_t>
+                                    || std::same_as<std::remove_cv_t<T>, uint16_t>
+                                    || std::same_as<std::remove_cv_t<T>, uint32_t>
+                                    || std::same_as<std::remove_cv_t<T>, uint64_t>
                                 );
 template <typename T>
 concept string_value_type = (
-                                     std::same_as<T, std::string_view>
-                                     || std::same_as<T, const std::string_view>
+                                     std::same_as<std::remove_cv_t<T>, std::string_view>
                                 );
 
 // Шаблонный класс, хранящий C-style строку фиксированной длины
-
-// ваш код здесь
 template <same_as_char_type CharT, size_t Len = kDfltFixedStringSize>
 struct basic_fixed_string {
-    // ваш код здесь
     CharT data[Len+1] = {};
 
-    constexpr basic_fixed_string() = default;
+    consteval basic_fixed_string() = default;
 
-    constexpr basic_fixed_string(const CharT (&s)[Len]) noexcept {
+    consteval basic_fixed_string(const CharT (&s)[Len]) noexcept {
         std::copy_n(s,Len,data);
     }
     template <size_t OtherLen>
-    constexpr basic_fixed_string(const CharT  (&s)[OtherLen]) noexcept requires 
+    consteval basic_fixed_string(const CharT  (&s)[OtherLen]) noexcept requires 
     requires { 
         OtherLen <= Len; 
     }  {
         std::copy_n(s,OtherLen,data);
     }
 
-    constexpr basic_fixed_string(const CharT * begin, const CharT * end) noexcept {
+    consteval basic_fixed_string(const CharT * begin, const CharT * end) noexcept {
         const CharT *ptr = begin;
 
         if (begin) {
@@ -98,7 +78,7 @@ struct basic_fixed_string {
         }
     }
 
-    constexpr size_t size() const noexcept {
+    consteval size_t size() const noexcept {
         size_t result = 0;
         while(data[result]) {
             ++result;
@@ -106,7 +86,7 @@ struct basic_fixed_string {
         return ++result;
     }
 
-    constexpr std::basic_string_view<CharT> get_data() const noexcept {
+    consteval std::basic_string_view<CharT> get_data() const noexcept {
         return std::basic_string_view<CharT>(data, size()-1);
     }
 };
@@ -120,8 +100,6 @@ using wfixed_string = basic_fixed_string<wchar_t, Len>;
 
 
 // Шаблонный класс, хранящий fixed_string достаточной длины для хранения ошибки парсинга
-
-// ваш код здесь
 template <size_t Len = kDfltErrorStrSize>
 struct parse_error : public fixed_string<Len> {
     constexpr parse_error(const char* s) : fixed_string<Len>(s, nullptr) {} 
@@ -131,42 +109,34 @@ struct parse_error : public fixed_string<Len> {
 };
 
 // Шаблонный класс для хранения результатов парсинга
-
 template <typename... Ts>
 struct scan_result {
-// ваш код здесь
-// измените реализацию
-    constexpr scan_result() = default ;
+    consteval scan_result() = default ;
     
-    constexpr scan_result(Ts &&...args) {
+    consteval scan_result(Ts &&...args) {
         values_ = std::tuple<Ts...>(args...);
     }
 
-    // constexpr scan_result(const std::tuple<std::decay_t<Ts>...>& tp) :
-    // values_(tp) {
-    // }
-    constexpr scan_result(const std::tuple<Ts...>& tp) :
+    consteval scan_result(const std::tuple<Ts...>& tp) :
     values_(tp) {
     }
     
     std::tuple<Ts... > values_;
 
     template <size_t index>
-    constexpr auto& values() {
+    consteval auto& values() {
         return std::get<index>(values_);
     }
     
     template <size_t index>
-    constexpr auto values() const {
+    consteval auto values() const {
         return std::get<index>(values_);
     }
     
     template <size_t index>
-    constexpr std::tuple_element_t<index, std::tuple<Ts...>> values_for_t() const {
-        return std::get<index>(values_);
+    consteval std::tuple_element_t<index, std::tuple<Ts...>>&& values_for_t() const {
+        return std::forward(std::get<index>(values_));
     }
-
-
 };
 
 } // namespace stdx::details

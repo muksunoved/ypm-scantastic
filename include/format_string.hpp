@@ -8,7 +8,6 @@
 
 namespace stdx::details {
 
-constexpr size_t kMaxFormatStrSize = 256;
     
 enum class spec_type {
     kSignedDigital,
@@ -41,12 +40,9 @@ struct valid_specs {
 
 
 // Шаблонный класс для хранения форматирующей строчки и ее особенностей
-// ваш код здесь
-//template <typename CharT, size_t Len>
 template <  same_as_char_type CharT, 
             basic_fixed_string<CharT, kMaxFormatStrSize> str  >
 class basic_format_string {
-    // ваш код здесь
 public:
 
     static consteval std::expected<size_t, parse_error<>> get_number_placeholders() {
@@ -115,8 +111,7 @@ public:
     using placeholders_positions_t = std::array<placeholders_pair_t, number_placeholders_.value()>;
 
 private:
-    
-    static constexpr placeholders_positions_t get_placeholders_positions() {
+    static consteval placeholders_positions_t get_placeholders_positions() {
         size_t pos = 0;
         placeholders_positions_t result;
         for (size_t i = 0; i < number_placeholders_.value(); i++) {
@@ -147,15 +142,6 @@ using format_string  = basic_format_string<char, str>;
 template <wfixed_string<kMaxFormatStrSize> str>
 using wformat_string  = basic_format_string<wchar_t, str>;
 
-
-// Пользовательский литерал
-/*
-ваш код здесь
-ваш код здесь operator"" _fs()  сигнатуру также поменяйте
-{
-ваш код здесь
-}
-*/
 
 template <fixed_string<kMaxFormatStrSize> str>
 constexpr auto operator"" _fs() {
