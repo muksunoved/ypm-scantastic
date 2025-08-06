@@ -12,5 +12,13 @@ RUN ln -fs /usr/bin/g++-14 /usr/bin/g++
 
 RUN git config --global core.editor code
 
+
+RUN  echo "ubuntu ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ubuntu \
+    && chmod 0440 /etc/sudoers.d/ubuntu
+
+RUN cd /usr/src/googletest \
+    && sudo cmake -B build \
+    && sudo cmake --build build --target install
+
 # Set the default command
 CMD ["/bin/bash"]
