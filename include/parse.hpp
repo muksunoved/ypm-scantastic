@@ -109,104 +109,99 @@ consteval auto get_current_source_for_parsing() {
     return std::pair{src_start, src_end};
 }
 
-// Семейство функция parse_value
-template<supported_value_type ValueT>
-consteval std::expected<ValueT, parse_error<>> parse_unsigned_value(const fixed_string<>& source, const size_t first, const size_t last, bool block_spaces = false) {
+// Семейство функций parse_value
+ template<unsigned_digital_value_type ValueT>
+ consteval std::expected<ValueT, parse_error<>> parse_value(const fixed_string<>& source, const size_t first, const size_t last) {
+     if (!source.size()) {
+         return std::unexpected("Invalid digital string size");
+     }
+
+     size_t local_first = first;
+     size_t local_last = last;
+
+    // убираем лишние пробелы спереди
+     for (size_t pos = first; pos < last; pos++) {
+         if (valid_digit_symbols<char>::is_space(source.data[pos])) {
+             local_first++;
+         } else {
+             break;
+         }
+     }
+     for (size_t pos = last-1; pos > local_first; pos--) {
+         if (valid_digit_symbols<char>::is_space(source.data[pos])) {
+             local_last--;
+         } else {
+             break;
+         }
+     }
+
+     for (size_t pos = local_first; pos < local_last; pos++) {
+         if (!valid_digit_symbols<char>::is_digital(source.data[pos]))
+             return std::unexpected("Invalid digital symbol");
+
+     }
+
+     ValueT value = 0;
+
+     for (size_t pos = local_first; pos < local_last; pos++) {
+         auto res = valid_digit_symbols<char>::to_number(source.data[pos]);
+      
+         if (!res) {
+             return std::unexpected("Invalid digit symbol");
+         };
+
+         max_value_type_t digit = res.value();
+         max_value_type_t limit  = std::numeric_limits<ValueT>::max();
+         if (limit / 10  < value) {
+             return std::unexpected("Value numeric limit overflow");
+         } 
+         value *= 10;
+         if (limit - value < digit) {
+             return std::unexpected("Value numeric limit overflow");
+         }
+         value += digit;
+     }
+     return value;
+ }
+
+template<signed_digital_value_type ValueT>
+consteval std::expected<ValueT, parse_error<>> parse_value(const fixed_string<>& source, const size_t first, const size_t last, bool block_spaces = false) {
     if (!source.size()) {
         return std::unexpected("Invalid digital string size");
     }
-
     size_t local_first = first;
-    size_t local_last = last;
+    size_t local_last  = last;
 
-    if (!block_spaces) {
-        for (size_t pos = first; pos < last; pos++) {
-            if (valid_digit_symbols<char>::is_space(source.data[pos])) {
-                local_first++;
-            } else {
-                break;
-            }
-        }
-    }
-    for (size_t pos = last-1; pos > local_first; pos--) {
+    // убираем лишние пробелы спереди
+    for (size_t pos = first; pos < last; pos++) {
         if (valid_digit_symbols<char>::is_space(source.data[pos])) {
-            local_last--;
+            ++local_first;
         } else {
             break;
         }
     }
-
-    for (size_t pos = local_first; pos < local_last; pos++) {
-        if (!valid_digit_symbols<char>::is_digital(source.data[pos]))
-            return std::unexpected("Invalid digital symbol");
-
-    }
-
-    ValueT value = 0;
-
-    for (size_t pos = local_first; pos < local_last; pos++) {
-        auto res = valid_digit_symbols<char>::to_number(source.data[pos]);
-        
-        if (!res) {
-            return std::unexpected("Invalid digit symbol");
-        };
-
-        max_value_type_t digit = res.value();
-        max_value_type_t limit  = std::numeric_limits<ValueT>::max();
-        if (limit / 10  < value) {
-            return std::unexpected("Value numeric limit overflow");
-        } 
-        value *= 10;
-        if (limit - value < digit) {
-            return std::unexpected("Value numeric limit overflow");
-        }
-        value += digit;
-    }
-    return value;
-}
-
-template<supported_value_type ValueT>
-consteval std::expected<ValueT, parse_error<>> parse_signed_value(const fixed_string<>& source, const size_t first, const size_t last) {
-    if (!source.size()) {
-        return std::unexpected("Invalid digital string size");
-    }
-    int minus = 1;
-    size_t shift = 0;
-    if (valid_digit_symbols<char>::is_minus(source.data[first])) {
-        minus = -1;
-        shift = 1;
-    }
-    auto is_minus = minus < 0;
     
-    auto res = parse_unsigned_value<max_value_type_t>(source, first+shift, last, (is_minus ? true : false) );
+    auto view = source.get_data();
+    ValueT value{};
 
-    if (!res) {
-        return std::unexpected("Parse base unsigned value error");
+    // для типов чисел со знаком используем from_chars
+    auto result = std::from_chars(&view[local_first], &view[local_last], value);
+    if (result) {
+        return value;
     }
 
-    max_value_type_t value = res.value();
-    max_value_type_t limit_max  = std::numeric_limits<ValueT>::max();
+    return std::unexpected("Error parse digital value");
+} 
 
-    if (!is_minus) {
-        if (limit_max < value) { 
-            return std::unexpected("Value numeric limit overflow");
-        }
-    } else {
-        max_value_type_t limit_min  = std::make_unsigned_t<ValueT>(std::numeric_limits<ValueT>::min()  ) ;
-        if (limit_min < value) { 
-            return std::unexpected("Value numeric limit overflow");
-        }
-    }
-    return minus * value;
-}
 
-template<supported_value_type ValueT>
-consteval std::expected<std::string_view, parse_error<>> parse_string_value(const fixed_string<>& source, const size_t first, const size_t last) {
+template<string_value_type ValueT>
+consteval std::expected<std::string_view, parse_error<>> parse_value(const fixed_string<>& source, const size_t first, const size_t last) {
     if (!source.size()) {
         return std::unexpected("Invalid digital string size");
     }
     return std::string_view(&source.data[first], last-first);
 }
+
 
 // Шаблонная функция, выполняющая преобразования исходных данных в конкретный тип на основе I-го плейсхолдера
 template<size_t I, format_string fmt, fixed_string source, supported_value_type ValueT>
@@ -220,23 +215,7 @@ consteval std::expected<ValueT, parse_error<>> parse_input() {  // поменя�
             if (!fv)
                 return std::unexpected("Can't get specifier type");
 
-            if constexpr (signed_digital_value_type<ValueT>) {
-
-                if  (fv == spec_type::kSignedDigital) 
-                    return parse_signed_value<ValueT>(source, src_first, src_last);
-            
-            } else if constexpr (unsigned_digital_value_type<ValueT>) {
-
-                if  (fv == spec_type::kUnsignedDigital) 
-                    return parse_unsigned_value<ValueT>(source, src_first, src_last);
-
-            } else if constexpr (string_value_type<ValueT>) {
-                if  (fv == spec_type::kString) 
-                    return parse_string_value<ValueT>(source, src_first, src_last);
-            
-            } else {
-                return std::unexpected("Unsupported value type");
-            }
+            return parse_value<std::remove_cv_t<ValueT>>(source, src_first, src_last);
         }
     }
     // update empty placeholder

@@ -4,6 +4,8 @@
 
 using namespace stdx::details;
 
+    
+
 int main() { 
 
     constexpr wchar_t wtest_string_1[] =  {L"Test error string 1"};
@@ -99,7 +101,7 @@ int main() {
     constexpr auto test_parse_d_8 = parse_input<0, "test {%d} test"_fs, fixed_string<>("test -9223372036854775808 test"), int64_t>();
     static_assert( test_parse_d_8 == -9223372036854775808);
 
-    constexpr auto test_parse_d_9 = parse_input<0, "test {%u} test"_fs, fixed_string<>("test  18446744073709551615  test"), uint64_t>();
+    constexpr auto test_parse_d_9 = parse_input<0, "test {%u} test"_fs, fixed_string<>("test 18446744073709551615 test"), uint64_t>();
     static_assert( test_parse_d_9 == 18446744073709551615);
     
     constexpr auto test_parse_d_10 = parse_input<0, "test {%u} test"_fs, fixed_string<>("test 18446744073709551616 test"), uint64_t>();
@@ -112,11 +114,11 @@ int main() {
     static_assert( scan_res_2.value().values<0>() == 32767);
     static_assert( scan_res_2.value().values<1>() == 100000);
 
-    constexpr std::expected scan_res_3 
+    constexpr auto scan_res_3 
                     = stdx::scan<"test {%d} {%s} test"_fs, fixed_string<>("test 32767 test_string test"), const int16_t, const std::string_view>();
     static_assert( scan_res_3.value().values<0>() == 32767);
     static_assert( scan_res_3.value().values<1>() == std::string_view("test_string"));
 
-    static_assert( std::is_same_v<decltype ((scan_res_3.value().values_for_t<0>())), const int16_t&&>);
-    
+    static_assert( std::is_same_v<decltype(scan_res_3.value().values_for_t<0>()), const int16_t&&>);
+    static_assert( std::is_same_v<decltype(scan_res_3.value().values_for_t<1>()), const std::string_view&&>);
 }
