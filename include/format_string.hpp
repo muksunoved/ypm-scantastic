@@ -4,93 +4,153 @@
 
 #include "types.hpp"
 
+
+
 namespace stdx::details {
 
-// Шаблонный класс для хранения форматирующей строчки и ее особенностей
-// ваш код здесь
-class format_string {
-    // ваш код здесь
+    
+enum class spec_type {
+    kSignedDigital,
+    kUnsignedDigital,
+    kString
 };
 
-// Пользовательский литерал
-/*
-ваш код здесь
-ваш код здесь operator"" _fs()  сигнатуру также поменяйте
-{
-ваш код здесь
-}
-*/
+template <same_as_char_type CharT>
+struct valid_specs {
+    static constexpr CharT data[] = {   static_cast<CharT>('d'), 
+                                                    static_cast<CharT>('u'), 
+                                                    static_cast<CharT>('s')};
 
-// Функция для получения количества плейсхолдеров и проверки корректности формирующей строки
-// Функция закомментирована, так как еще не реализованы классы, которые она использует
-/*
-// Сделайте эту свободную функцию методом класса format_string
-template<fixed_string str>
-consteval std::expected<size_t, parse_error> get_number_placeholders() {
-    constexpr size_t N = str.size();
-    if (!N)
-        return 0;
-    size_t placeholder_count = 0;
-    size_t pos = 0;
-    const size_t size = N - 1; // -1 для игнорирования нуль-терминатора
+    static consteval std::expected<spec_type, parse_error<>> get_spec_type(CharT symbol) {
+        switch (symbol) {
+            case static_cast<CharT>('d'):
+            return spec_type::kSignedDigital;
 
-    while (pos < size) {
-        // Пропускаем все символы до '{'
-        if (str.data[pos] != '{') {
-            ++pos;
-            continue;
+            case static_cast<CharT>('u'):
+            return spec_type::kUnsignedDigital;
+
+            case static_cast<CharT>('s'):
+            return spec_type::kString;
+
+            default:
+            return std::unexpected("Unknown specifier");
         }
+    }
+};
 
-        // Проверяем незакрытый плейсхолдер
-        if (pos + 1 >= size) {
-            return std::unexpected(parse_error{"Unclosed last placeholder"});
-        }
 
-        // Начало плейсхолдера
-        ++placeholder_count;
-        ++pos;
+// Шаблонный класс для хранения форматирующей строчки и ее особенностей
+template <  same_as_char_type CharT, 
+            basic_fixed_string<CharT, kMaxFormatStrSize> str  >
+class basic_format_string {
+public:
 
-        // Проверка спецификатора формата
-        if (str.data[pos] == '%') {
-            ++pos;
-            if (pos >= size) {
+    static consteval std::expected<size_t, parse_error<>> get_number_placeholders() {
+        constexpr size_t N = str_.size();
+        if (!N)
+            return 0;
+        size_t placeholder_count = 0;
+        size_t pos = 0;
+        const size_t size = N - 1; // -1 для игнорирования нуль-терминатора
+
+        while (pos < size) {
+            // Пропускаем все символы до '{'
+            if (str_.data[pos] != static_cast<CharT>('{')) {
+                ++pos;
+                continue;
+            }
+
+            // Проверяем незакрытый плейсхолдер
+            if (pos + 1 >= size) {
                 return std::unexpected(parse_error{"Unclosed last placeholder"});
             }
 
-            // Проверяем допустимые спецификаторы
-            const char spec = str.data[pos];
-            constexpr char valid_specs[] = {'d', 'u', 'f', 's'};
-            bool valid = false;
+            // Начало плейсхолдера
+            ++placeholder_count;
+            ++pos;
 
-            for (const char s : valid_specs) {
-                if (spec == s) {
-                    valid = true;
-                    break;
+            // Проверка спецификатора формата
+            if (str_.data[pos] == static_cast<CharT>('%')) {
+                ++pos;
+                if (pos >= size) {
+                    return std::unexpected(parse_error{"Unclosed last placeholder"});
                 }
+
+                // Проверяем допустимые спецификаторы
+                const CharT spec = str_.data[pos];
+                bool valid = false;
+
+                for (const CharT s : valid_specs<CharT>::data) {
+                    if (spec == s) {
+                        valid = true;
+                        break;
+                    }
+                }
+
+                if (!valid) {
+                    return std::unexpected(parse_error{"Invalid specifier."});
+                }
+                ++pos;
             }
 
-            if (!valid) {
-                return std::unexpected(parse_error{"Invalid specifier."});
+            // Проверяем закрывающую скобку
+            if (pos >= size || str_.data[pos] != static_cast<CharT>('}')) {
+                return std::unexpected(parse_error{"\'}\' hasn't been found in appropriate place"});
             }
             ++pos;
         }
-
-        // Проверяем закрывающую скобку
-        if (pos >= size || str.data[pos] != '}') {
-            return std::unexpected(parse_error{"\'}\' hasn't been found in appropriate place"});
-        }
-        ++pos;
+        return placeholder_count;
     }
 
-    return placeholder_count;
+public:
+    static constexpr auto str_ = str;
+    static constexpr auto number_placeholders_ = get_number_placeholders();
+    static_assert(number_placeholders_, number_placeholders_.error().get_data() );
+    
+    using placeholders_pair_t = std::pair<size_t, size_t>;
+    using placeholders_positions_t = std::array<placeholders_pair_t, number_placeholders_.value()>;
+
+private:
+    static consteval placeholders_positions_t get_placeholders_positions() {
+        size_t pos = 0;
+        placeholders_positions_t result;
+        for (size_t i = 0; i < number_placeholders_.value(); i++) {
+            placeholders_pair_t p;
+            size_t pos_first;
+            size_t pos_second;
+            while(str_.data[pos] != static_cast<CharT>('{')) {
+                pos++;
+            };
+            pos_first = pos;
+            while(str_.data[pos] != static_cast<CharT>('}')) {
+                pos++;
+            };
+            pos_second = pos;
+            result[i] = {pos_first, pos_second};
+        }
+        return result;
+    } 
+public:
+
+    static constexpr placeholders_positions_t placeholders_positions_ = get_placeholders_positions();
+
+};
+
+template <fixed_string<kMaxFormatStrSize> str>
+using format_string  = basic_format_string<char, str>;
+
+template <wfixed_string<kMaxFormatStrSize> str>
+using wformat_string  = basic_format_string<wchar_t, str>;
+
+
+template <fixed_string<kMaxFormatStrSize> str>
+constexpr auto operator"" _fs() {
+    return format_string<str>();
 }
-*/
 
-// Функция для получения позиций плейсхолдеров
-
-// ваш код здесь
-void get_placeholder_positions() {  // сигнатуру тоже нужно изменить
-    // ваш код здесь
+template <wfixed_string<kMaxFormatStrSize> str>
+constexpr auto operator"" _wfs() {
+    return wformat_string<str>();
 }
 
 } // namespace stdx::details

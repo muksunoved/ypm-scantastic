@@ -5,6 +5,7 @@
         "context": "."
     },
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "remoteUser": "ubuntu",
     "customizations": {
       "vscode": {
         "extensions": [

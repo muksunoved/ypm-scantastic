@@ -10,20 +10,64 @@
 
 namespace stdx::details {
 
+template <same_as_char_type CharT>
+struct valid_digit_symbols {
+    static constexpr std::array<std::pair<CharT, int>, 12> data  = {{   
+                            { static_cast<CharT>(' '), -1 }, 
+                            { static_cast<CharT>('-'), -1 }, 
+                            { static_cast<CharT>('0'),  0}, 
+                            { static_cast<CharT>('1'),  1}, 
+                            { static_cast<CharT>('2'),  2}, 
+                            { static_cast<CharT>('3'),  3}, 
+                            { static_cast<CharT>('4'),  4}, 
+                            { static_cast<CharT>('5'),  5}, 
+                            { static_cast<CharT>('6'),  6}, 
+                            { static_cast<CharT>('7'),  7}, 
+                            { static_cast<CharT>('8'),  8}, 
+                            { static_cast<CharT>('9'),  9}, 
+    }};
+    
+    static constexpr size_t first_of_digitals = 2;
+    static constexpr size_t minus_position = 1;
+    static constexpr size_t space_position = 0;
+
+    static consteval bool is_digital(CharT c) {
+        for (auto d : data) {
+            if (d.first == c)
+                return true;
+        }
+        return false;
+    }
+    static consteval bool is_minus(CharT c) {
+        return (c == data[minus_position].first);
+    }
+    static consteval bool is_space(CharT c) {
+        return (c == data[space_position].first);
+    }
+    static consteval std::expected<int, parse_error<>> to_number(CharT c) {
+        for (auto d : data) {
+            if (d.first == c)
+                return d.second;
+        }
+
+        return std::unexpected("Can't convert symbol");
+
+    }
+};
+
 // Шаблонная функция, возвращающая пару позиций в строке с исходными данными, соотвествующих I-ому плейсхолдеру
-// Функция закомментирована, так как еще не реализованы классы, которые она использует
-/*
-template<int I, format_string fmt, fixed_string source>
+template<size_t I, format_string fmt, fixed_string source>
 consteval auto get_current_source_for_parsing() {
-    static_assert(I >= 0 && I < fmt.number_placeholders, "Invalid placeholder index");
+    constexpr auto number_placeholders = fmt.number_placeholders_.value();
+    static_assert(I >= 0 && I < number_placeholders, "Invalid placeholder index");
 
     constexpr auto to_sv = [](const auto& fs) {
         return std::string_view(fs.data, fs.size() - 1);
     };
 
-    constexpr auto fmt_sv = to_sv(fmt.fmt);
+    constexpr auto fmt_sv = to_sv(fmt.str_);
     constexpr auto src_sv = to_sv(source);
-    constexpr auto& positions = fmt.placeholder_positions;
+    constexpr auto& positions = fmt.placeholders_positions_;
 
     // Получаем границы текущего плейсхолдера в формате
     constexpr auto pos_i = positions[I];
@@ -55,7 +99,7 @@ consteval auto get_current_source_for_parsing() {
             return src_sv.size();
         }
         constexpr auto sep = fmt_sv.substr(fmt_end + 1,
-            (I < fmt.number_placeholders - 1)
+            (I < number_placeholders - 1)
                 ? positions[I+1].first - (fmt_end + 1)
                 : fmt_sv.size() - (fmt_end + 1));
         // Ищем разделитель после текущего значения
@@ -64,15 +108,87 @@ consteval auto get_current_source_for_parsing() {
     }();
     return std::pair{src_start, src_end};
 }
-*/
 
-// Реализуйте семейство функция parse_value
+// Семейство функций parse_value
+ template<unsigned_digital_value_type ValueT>
+ consteval std::expected<ValueT, parse_error<>> parse_value(const fixed_string<>& source, const size_t first, const size_t last) {
+     if (!source.size()) {
+         return std::unexpected("Invalid digital string size");
+     }
+
+     for (size_t pos = first; pos < last; pos++) {
+         if (!valid_digit_symbols<char>::is_digital(source.data[pos]))
+             return std::unexpected("Invalid digital symbol");
+
+     }
+
+     ValueT value = 0;
+
+     for (size_t pos = first; pos < last; pos++) {
+         auto res = valid_digit_symbols<char>::to_number(source.data[pos]);
+      
+         if (!res) {
+             return std::unexpected("Invalid digit symbol");
+         };
+
+         max_value_type_t digit = res.value();
+         max_value_type_t limit  = std::numeric_limits<ValueT>::max();
+         if (limit / 10  < value) {
+             return std::unexpected("Value numeric limit overflow");
+         } 
+         value *= 10;
+         if (limit - value < digit) {
+             return std::unexpected("Value numeric limit overflow");
+         }
+         value += digit;
+     }
+     return value;
+ }
+
+// для типов чисел со знаком используем from_chars 
+template<signed_digital_value_type ValueT>
+consteval std::expected<ValueT, parse_error<>> parse_value(const fixed_string<>& source, const size_t first, const size_t last, bool block_spaces = false) {
+    if (!source.size()) {
+        return std::unexpected("Invalid digital string size");
+    }
+    auto view = source.get_data();
+    ValueT value{};
+
+    auto result = std::from_chars(&view[first], &view[last], value);
+    if (result) {
+        return value;
+    }
+
+    return std::unexpected("Error parse digital value");
+} 
+
+
+template<string_value_type ValueT>
+consteval std::expected<std::string_view, parse_error<>> parse_value(const fixed_string<>& source, const size_t first, const size_t last) {
+    if (!source.size()) {
+        return std::unexpected("Invalid digital string size");
+    }
+    return std::string_view(&source.data[first], last-first);
+}
+
 
 // Шаблонная функция, выполняющая преобразования исходных данных в конкретный тип на основе I-го плейсхолдера
+template<size_t I, format_string fmt, fixed_string source, supported_value_type ValueT>
+consteval std::expected<ValueT, parse_error<>> parse_input() {  // поменяйте сигнатуру
+    auto [src_first, src_last] = get_current_source_for_parsing<I,fmt,source>();
+    auto [f_p, s_p] = fmt.placeholders_positions_[I];
 
-// здесь ваш код
-void parse_input() {  // поменяйте сигнатуру
-    // здесь ваш код
+    for (size_t pos = f_p; pos < s_p; pos++) {
+        if (fmt.str_.data[pos] == '%') {
+            auto fv = valid_specs<char>::get_spec_type(fmt.str_.data[pos+1]);
+            if (!fv)
+                return std::unexpected("Can't get specifier type");
+
+            return parse_value<std::remove_cv_t<ValueT>>(source, src_first, src_last);
+        }
+    }
+    // update empty placeholder
+    return std::unexpected("Unknown error");
 }
 
 } // namespace stdx::details
