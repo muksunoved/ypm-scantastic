@@ -116,26 +116,7 @@ consteval auto get_current_source_for_parsing() {
          return std::unexpected("Invalid digital string size");
      }
 
-     size_t local_first = first;
-     size_t local_last = last;
-
-    // убираем лишние пробелы спереди
      for (size_t pos = first; pos < last; pos++) {
-         if (valid_digit_symbols<char>::is_space(source.data[pos])) {
-             local_first++;
-         } else {
-             break;
-         }
-     }
-     for (size_t pos = last-1; pos > local_first; pos--) {
-         if (valid_digit_symbols<char>::is_space(source.data[pos])) {
-             local_last--;
-         } else {
-             break;
-         }
-     }
-
-     for (size_t pos = local_first; pos < local_last; pos++) {
          if (!valid_digit_symbols<char>::is_digital(source.data[pos]))
              return std::unexpected("Invalid digital symbol");
 
@@ -143,7 +124,7 @@ consteval auto get_current_source_for_parsing() {
 
      ValueT value = 0;
 
-     for (size_t pos = local_first; pos < local_last; pos++) {
+     for (size_t pos = first; pos < last; pos++) {
          auto res = valid_digit_symbols<char>::to_number(source.data[pos]);
       
          if (!res) {
@@ -164,28 +145,16 @@ consteval auto get_current_source_for_parsing() {
      return value;
  }
 
+// для типов чисел со знаком используем from_chars 
 template<signed_digital_value_type ValueT>
 consteval std::expected<ValueT, parse_error<>> parse_value(const fixed_string<>& source, const size_t first, const size_t last, bool block_spaces = false) {
     if (!source.size()) {
         return std::unexpected("Invalid digital string size");
     }
-    size_t local_first = first;
-    size_t local_last  = last;
-
-    // убираем лишние пробелы спереди
-    for (size_t pos = first; pos < last; pos++) {
-        if (valid_digit_symbols<char>::is_space(source.data[pos])) {
-            ++local_first;
-        } else {
-            break;
-        }
-    }
-    
     auto view = source.get_data();
     ValueT value{};
 
-    // для типов чисел со знаком используем from_chars
-    auto result = std::from_chars(&view[local_first], &view[local_last], value);
+    auto result = std::from_chars(&view[first], &view[last], value);
     if (result) {
         return value;
     }

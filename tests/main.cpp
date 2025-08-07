@@ -115,10 +115,11 @@ int main() {
     static_assert( scan_res_2.value().values<1>() == 100000);
 
     constexpr auto scan_res_3 
-                    = stdx::scan<"test {%d} {%s} test"_fs, fixed_string<>("test 32767 test_string test"), const int16_t, const std::string_view>();
+                    = stdx::scan<"test {%d} {%s} {%d} test"_fs, fixed_string<>("test 32767 test_string 127 test"), const int16_t, const std::string_view, int8_t>();
     static_assert( scan_res_3.value().values<0>() == 32767);
     static_assert( scan_res_3.value().values<1>() == std::string_view("test_string"));
 
     static_assert( std::is_same_v<decltype(scan_res_3.value().values_for_t<0>()), const int16_t&&>);
     static_assert( std::is_same_v<decltype(scan_res_3.value().values_for_t<1>()), const std::string_view&&>);
+    static_assert( std::is_same_v<decltype(scan_res_3.value().values_for_t<2>()), int8_t&&>);
 }

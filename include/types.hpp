@@ -21,15 +21,9 @@ concept same_as_char_type = (std::same_as<T, char> || std::same_as<T, wchar_t>);
 
  template <typename T>
  concept supported_value_type = (
-                                        std::same_as<std::remove_cv_t<T>, int8_t> 
-                                     || std::same_as<std::remove_cv_t<T>, int16_t>
-                                     || std::same_as<std::remove_cv_t<T>, int32_t>
-                                     || std::same_as<std::remove_cv_t<T>, int64_t>
-                                     || std::same_as<std::remove_cv_t<T>, uint8_t>
-                                     || std::same_as<std::remove_cv_t<T>, uint16_t>
-                                     || std::same_as<std::remove_cv_t<T>, uint32_t>
-                                     || std::same_as<std::remove_cv_t<T>, uint64_t>
-                                     || std::same_as<std::remove_cv_t<T>, std::string_view>
+                                     (   std::is_integral_v<T>
+                                     || std::same_as<std::remove_cv_t<T>, std::string_view>)
+                                            && !std::same_as<T, bool>
                                  );
 template <typename T>
 concept signed_digital_value_type = (
@@ -49,7 +43,7 @@ concept digital_value_type = (
                                     supported_value_type<T> && !string_value_type<T>
                                 );
 template<typename... Ts>
-concept all_supported = (supported_value_type<Ts> && ...);
+concept all_supported = (supported_value_type<Ts> || ...);
 
 // Шаблонный класс, хранящий C-style строку фиксированной длины
 template <same_as_char_type CharT, size_t Len = kDfltFixedStringSize>
@@ -135,7 +129,7 @@ struct scan_result {
     }
     
     template <size_t index>
-    std::tuple_element_t<index, std::tuple<Ts...>>&& values_for_t() const {
+    std::tuple_element_t<index, decltype(values_)>&& values_for_t() const {
         return std::forward(std::get<index>(values_));
     }
 };
